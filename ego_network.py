@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import pandas as pd
+import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -8,6 +9,13 @@ class GraphMetricts:
     avg_degree: float
     avg_shortest_path_length: float
     avg_clustering_coefficient: float
+
+    def __str__(self) -> str:
+        return f"Graph Metrics: \n" \
+               f"  Average Degree: {self.avg_degree} \n" \
+               f"  Characteristic Path Length: {self.avg_shortest_path_length} \n" \
+               f"  Average Clustering Coefficient: {self.avg_clustering_coefficient}"
+    
 
 def create_network_from_csv(file_path: str) -> nx.Graph:
     # Read the CSV file
@@ -24,53 +32,48 @@ def count_nodes_and_edges(G: nx.Graph) -> tuple:
     return num_nodes, num_edges
 
 def calculate_graph_metrics(G: nx.Graph) -> GraphMetricts:
-    avg_degree = sum(dict(G.degree()).values()) / G.number_of_nodes()
-    try:
-        avg_shortest_path_length = nx.average_shortest_path_length(G)
-    except nx.NetworkXError:
-        avg_shortest_path_length = float('inf')  # If the graph is disconnected
-    avg_clustering_coefficient = nx.average_clustering(G)
+    avg_degree = np.mean([degree for node, degree in G.degree()])
     
     return GraphMetricts(
-        avg_degree=avg_degree, 
-        avg_shortest_path_length=avg_shortest_path_length, 
-        avg_clustering_coefficient=avg_clustering_coefficient
+        avg_degree=avg_degree,
+        avg_shortest_path_length=nx.average_shortest_path_length(G), 
+        avg_clustering_coefficient=nx.average_clustering(G)
     )
 
 
+def plot_network_graph(G: nx.Graph):
+    plt.figure()
+    pos = nx.spring_layout(G)
+    nodes = nx.draw_networkx_nodes(G, pos, alpha=0.8)
+    nodes.set_edgecolor('k')
+    nx.draw_networkx_labels(G, pos, font_size=8)
+    nx.draw_networkx_edges(G, pos, width=1.0, alpha=0.2)
+    plt.show()
+
+
 def plot_degree_distribution(G: nx.Graph):
-    degree_sequence = sorted([d for n, d in G.degree()], reverse=True)
+    degree_sequence = sorted([degree for node, degree in G.degree()], reverse=True)
     degree_count = pd.Series(degree_sequence).value_counts().sort_index()
 
     plt.figure(figsize=(10, 6))
-    plt.bar(degree_count.index, degree_count.values, color='b')
+    plt.bar(degree_count.index, degree_count.values, color='b', alpha=0.7)
     plt.title("Degree Distribution")
     plt.xlabel("Degree")
     plt.ylabel("Number of Nodes")
-    plt.savefig("degree_distribution.png")
-
-    return degree_count
+    plt.show()
 
 # Main Execution
 if __name__ == "__main__":
     file_path = 'ego_sep24.csv'
 
-    # Step 1: Create the network graph
     G = create_network_from_csv(file_path)
-    
-    # Step 2: Count the number of nodes and edges
+
     num_nodes, num_edges = count_nodes_and_edges(G)
     print(f"Number of nodes: {num_nodes}")
     print(f"Number of edges: {num_edges}")
 
-    # Step 3: Calculate graph metrics
     metrics = calculate_graph_metrics(G)
-    print("Graph Metrics:")
-    print(f"  Average Degree: {metrics.avg_degree}")
-    print(f"  Characteristic Path Length: {metrics.avg_shortest_path_length}")
-    print(f"  Average Clustering Coefficient: {metrics.avg_clustering_coefficient}")
+    print(metrics)
 
-    # Step 4: Plot degree distribution
-    degree_distribution = plot_degree_distribution(G)
-    print("\nDegree Distribution:")
-    print(degree_distribution)
+    plot_network_graph(G)
+    plot_degree_distribution(G)
