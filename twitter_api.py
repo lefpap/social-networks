@@ -44,7 +44,7 @@ def create_tweepy_api(api_keys: APIKeys) -> tweepy.API:
     
     return api
 
-def print_user_info(user_info):
+def print_user_info(user_info: tweepy.models.User):
     '''Εκτύπωση των πληροφοριών του χρήστη'''
 
     print("User ID:", user_info.id)
